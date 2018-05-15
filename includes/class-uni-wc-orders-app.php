@@ -74,7 +74,10 @@ final class Uni_Wc_Orders_App {
      * Load dependencies
      */
     private function load_dependencies() {
-        include_once( $this->plugin_path() . '/class-uni-jwt-auth.php' );
+        include_once( $this->plugin_path() . '/abstract-uni-rest-posts-controller.php' );
+        include_once( $this->plugin_path() . '/abstract-uni-rest-crud-controller.php' );
+        include_once( $this->plugin_path() . '/class-uni-rest-orders-controller.php' );
+        include_once( $this->plugin_path() . '/class-uni-jwt-auth-controller.php' );
         include_once( $this->plugin_path() . '/vendor/php-jwt/JWT.php' );
         include_once( $this->plugin_path() . '/vendor/php-jwt/BeforeValidException.php' );
         include_once( $this->plugin_path() . '/vendor/php-jwt/ExpiredException.php' );
@@ -102,8 +105,13 @@ final class Uni_Wc_Orders_App {
      * Init hooks
      */
     private function init_hooks() {
-        $jwt_auth = new Uni_Jwt_Auth( $this->namespace, $this->version );
-        add_action( 'rest_api_init', array( $jwt_auth, 'add_routes' ) );
+        $jwt_auth_api = new Uni_Jwt_Auth_Controller( $this->namespace, $this->version );
+        add_action( 'rest_api_init', array( $jwt_auth_api, 'register_routes' ) );
+        add_filter( 'determine_current_user', array( $jwt_auth_api, 'authenticate' ), 15 );
+        add_filter( 'rest_pre_dispatch', array( $jwt_auth_api, 'check_user_permissions' ), 10, 1 );
+
+        $orders_api = new Uni_Rest_Orders_Controller( $this->namespace, $this->version );
+        add_action( 'rest_api_init', array( $orders_api, 'register_routes' ) );
     }
 
     /**
