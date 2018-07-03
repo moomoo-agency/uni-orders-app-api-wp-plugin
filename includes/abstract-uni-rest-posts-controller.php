@@ -25,148 +25,106 @@ abstract class Uni_REST_Posts_Controller extends WP_REST_Controller {
      */
     protected $rest_base = '';
 
-    /**
-     * Check if a given request has access to get items
-     *
-     * @param WP_REST_Request $request Full data about the request.
-     * @return WP_Error|bool
-     */
-    public function get_items_permissions_check( $request ) {
-        return true;
-        /*return ( current_user_can( 'manage_woocommerce' ) )
-            ? true
-            : new WP_Error(
-        'uni_wc_orders_app_rest_cannot_view',
-        __( 'Sorry, you cannot list resources.',
-        'wc-orders-app' ),
-        array( 'status' => rest_authorization_required_code() ) );*/
-    }
+	/**
+	 * Check if a given request has access to read items.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return WP_Error|boolean
+	 */
+	public function get_items_permissions_check( $request ) {
+		if ( ! wc_rest_check_post_permissions( $this->post_type, 'read' ) ) {
+			return new WP_Error( 'uni_wc_orders_app_rest_cannot_view', __( 'Sorry, you cannot list resources.', 'wc-orders-app' ), array( 'status' => rest_authorization_required_code() ) );
+		}
 
-    /**
-     * Check if a given request has access to get a specific item
-     *
-     * @param WP_REST_Request $request Full data about the request.
-     * @return WP_Error|bool
-     */
-    public function get_item_permissions_check( $request ) {
-        return $this->get_items_permissions_check( $request );
-    }
+		return true;
+	}
 
-    /**
-     * Check if a given request has access to create items
-     *
-     * @param WP_REST_Request $request Full data about the request.
-     * @return WP_Error|bool
-     */
-    public function create_item_permissions_check( $request ) {
-        return ( current_user_can( 'manage_woocommerce' ) )
-            ? true
-            : new WP_Error( 'uni_wc_orders_app_rest_cannot_modify', __( 'Sorry, you are not allowed to modify resources.', 'wc-orders-app' ), array( 'status' => rest_authorization_required_code() ) );
-    }
+	/**
+	 * Check if a given request has access to create an item.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return WP_Error|boolean
+	 */
+	public function create_item_permissions_check( $request ) {
+		if ( ! wc_rest_check_post_permissions( $this->post_type, 'create' ) ) {
+			return new WP_Error( 'uni_wc_orders_app_rest_cannot_create', __( 'Sorry, you are not allowed to create resources.', 'wc-orders-app' ), array( 'status' => rest_authorization_required_code() ) );
+		}
 
-    /**
-     * Check if a given request has access to update a specific item
-     *
-     * @param WP_REST_Request $request Full data about the request.
-     * @return WP_Error|bool
-     */
-    public function update_item_permissions_check( $request ) {
-        return $this->create_item_permissions_check( $request );
-    }
+		return true;
+	}
 
-    /**
-     * Check if a given request has access to delete a specific item
-     *
-     * @param WP_REST_Request $request Full data about the request.
-     * @return WP_Error|bool
-     */
-    public function delete_item_permissions_check( $request ) {
-        return $this->create_item_permissions_check( $request );
-    }
+	/**
+	 * Check if a given request has access to read an item.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return WP_Error|boolean
+	 */
+	public function get_item_permissions_check( $request ) {
+		$post = get_post( (int) $request['id'] );
 
-    /**
-     * Get a collection of items
-     *
-     * @param WP_REST_Request $request Full data about the request.
-     * @return WP_Error|WP_REST_Response
-     */
-    public function get_items( $request ) {
-        $args                         = array();
-        $args['offset']               = $request['offset'];
-        $args['order']                = $request['order'];
-        $args['orderby']              = $request['orderby'];
-        $args['paged']                = $request['page'];
-        $args['post__in']             = $request['include'];
-        $args['post__not_in']         = $request['exclude'];
-        $args['posts_per_page']       = $request['per_page'];
-        $args['name']                 = $request['slug'];
-        $args['s']                    = $request['search'];
+		if ( $post && ! wc_rest_check_post_permissions( $this->post_type, 'read', $post->ID ) ) {
+			return new WP_Error( 'uni_wc_orders_app_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wc-orders-app' ), array( 'status' => rest_authorization_required_code() ) );
+		}
 
-        $args['date_query'] = array();
-        // Set before into date query. Date query must be specified as an array of an array.
-        if ( isset( $request['before'] ) ) {
-            $args['date_query'][0]['before'] = $request['before'];
-        }
+		return true;
+	}
 
-        // Set after into date query. Date query must be specified as an array of an array.
-        if ( isset( $request['after'] ) ) {
-            $args['date_query'][0]['after'] = $request['after'];
-        }
+	/**
+	 * Check if a given request has access to update an item.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return WP_Error|boolean
+	 */
+	public function update_item_permissions_check( $request ) {
+		$post = get_post( (int) $request['id'] );
 
-        // Force the post_type argument, since it's not a user input variable.
-        $args['post_type'] = $this->post_type;
+		if ( $post && ! wc_rest_check_post_permissions( $this->post_type, 'edit', $post->ID ) ) {
+			return new WP_Error( 'uni_wc_orders_app_rest_cannot_edit', __( 'Sorry, you are not allowed to edit this resource.', 'wc-orders-app' ), array( 'status' => rest_authorization_required_code() ) );
+		}
 
-        $query_args = $this->prepare_items_query( $args, $request );
+		return true;
+	}
 
-        $posts_query = new WP_Query();
-        $query_result = $posts_query->query( $query_args );
+	/**
+	 * Check if a given request has access to delete an item.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return bool|WP_Error
+	 */
+	public function delete_item_permissions_check( $request ) {
+		$post = get_post( (int) $request['id'] );
 
-        $posts = array();
-        foreach ( $query_result as $post ) {
-            if ( ! wc_rest_check_post_permissions( $this->post_type, 'read', $post->ID ) ) {
-                continue;
-            }
+		if ( $post && ! wc_rest_check_post_permissions( $this->post_type, 'delete', $post->ID ) ) {
+			return new WP_Error( 'uni_wc_orders_app_rest_cannot_delete', __( 'Sorry, you are not allowed to delete this resource.', 'wc-orders-app' ), array( 'status' => rest_authorization_required_code() ) );
+		}
 
-            $data = $this->prepare_item_for_response( $post, $request );
-            $posts[] = $this->prepare_response_for_collection( $data );
-        }
+		return true;
+	}
 
-        $page = (int) $query_args['paged'];
-        $total_posts = $posts_query->found_posts;
+	/**
+	 * Check if a given request has access batch create, update and delete items.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 *
+	 * @return boolean|WP_Error
+	 */
+	public function batch_items_permissions_check( $request ) {
+		if ( ! wc_rest_check_post_permissions( $this->post_type, 'batch' ) ) {
+			return new WP_Error( 'uni_wc_orders_app_rest_cannot_batch', __( 'Sorry, you are not allowed to batch manipulate this resource.', 'wc-orders-app' ), array( 'status' => rest_authorization_required_code() ) );
+		}
 
-        if ( $total_posts < 1 ) {
-            // Out-of-bounds, run the query again without LIMIT for total count
-            unset( $query_args['paged'] );
-            $count_query = new WP_Query();
-            $count_query->query( $query_args );
-            $total_posts = $count_query->found_posts;
-        }
+		return true;
+	}
 
-        $max_pages = ceil( $total_posts / (int) $query_args['posts_per_page'] );
-
-        $response = rest_ensure_response( $posts );
-        $response->header( 'X-WP-Total', (int) $total_posts );
-        $response->header( 'X-WP-TotalPages', (int) $max_pages );
-
-        $request_params = $request->get_query_params();
-        $base = add_query_arg( $request_params, rest_url( sprintf( '/%s/%s', $this->namespace, $this->rest_base ) ) );
-
-        if ( $page > 1 ) {
-            $prev_page = $page - 1;
-            if ( $prev_page > $max_pages ) {
-                $prev_page = $max_pages;
-            }
-            $prev_link = add_query_arg( 'page', $prev_page, $base );
-            $response->link_header( 'prev', $prev_link );
-        }
-        if ( $max_pages > $page ) {
-            $next_page = $page + 1;
-            $next_link = add_query_arg( 'page', $next_page, $base );
-            $response->link_header( 'next', $next_link );
-        }
-
-        return $response;
-    }
+	/**
+	 * Get a collection of items
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return WP_Error|WP_REST_Response
+	 */
+	public function get_items( $request ) {
+		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass." ), __METHOD__ ), array( 'status' => 405 ) );
+	}
 
     /**
      * Get one item from the collection
@@ -338,6 +296,15 @@ abstract class Uni_REST_Posts_Controller extends WP_REST_Controller {
     public function prepare_item_for_response( $item, $request ) {
         return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass." ), __METHOD__ ), array( 'status' => 405 ) );
     }
+
+	/**
+	 * Get normalized rest base.
+	 *
+	 * @return string
+	 */
+	protected function get_normalized_rest_base() {
+		return preg_replace( '/\(.*\)\//i', '', $this->rest_base );
+	}
 
     /**
      * Get the query params for collections

@@ -1,7 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Uni_Wc_Orders_App Class
@@ -77,6 +75,7 @@ final class Uni_Wc_Orders_App {
         include_once( $this->plugin_path() . '/abstract-uni-rest-posts-controller.php' );
         include_once( $this->plugin_path() . '/abstract-uni-rest-crud-controller.php' );
         include_once( $this->plugin_path() . '/class-uni-rest-orders-controller.php' );
+	    include_once( $this->plugin_path() . '/class-uni-rest-report-sales-controller.php' );
         include_once( $this->plugin_path() . '/class-uni-jwt-auth-controller.php' );
         include_once( $this->plugin_path() . '/vendor/php-jwt/JWT.php' );
         include_once( $this->plugin_path() . '/vendor/php-jwt/BeforeValidException.php' );
@@ -98,7 +97,7 @@ final class Uni_Wc_Orders_App {
      */
     private function define_constants() {
         // the key used here is just an example, it is not a real one!
-        $this->define( 'WC_ORDERS_APP_SECRET_KEY', '~8wnp!4{.Pv|(B$tSo0$fS|5uj>|2I$EGf3+:F7D[ K3b@-:gwZ-V>H[?I~Pv:9)' );
+        $this->define( 'WC_ORDERS_APP_SECRET_KEY', 'your-secret-key-here' );
     }
 
     /**
@@ -112,6 +111,9 @@ final class Uni_Wc_Orders_App {
 
         $orders_api = new Uni_Rest_Orders_Controller( $this->namespace, $this->version );
         add_action( 'rest_api_init', array( $orders_api, 'register_routes' ) );
+
+	    $sales_api = new Uni_Rest_Sales_Controller( $this->namespace, $this->version );
+	    add_action( 'rest_api_init', array( $sales_api, 'register_routes' ) );
     }
 
     /**

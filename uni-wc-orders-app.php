@@ -15,9 +15,7 @@
  *
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 require plugin_dir_path( __FILE__ ) . 'includes/class-uni-wc-orders-app.php';
 
